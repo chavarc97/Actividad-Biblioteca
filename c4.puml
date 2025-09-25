@@ -1,0 +1,90 @@
+@startuml
+title C4 - Clases (fiel a código original del profe + Eliminar)
+
+class LaunchRequestHandler {
+  +can_handle(handler_input)
+  +handle(handler_input)
+}
+
+class AgregarLibroIntentHandler {
+  +can_handle(handler_input)
+  +handle(handler_input)
+}
+
+class EliminarLibroIntentHandler {
+  +can_handle(handler_input)
+  +handle(handler_input)
+}
+
+class ListarLibrosIntentHandler {
+  +can_handle(handler_input)
+  +handle(handler_input)
+}
+
+class BuscarLibroIntentHandler {
+  +can_handle(handler_input)
+  +handle(handler_input)
+}
+
+class PrestarLibroIntentHandler {
+  +can_handle(handler_input)
+  +handle(handler_input)
+}
+
+class DevolverLibroIntentHandler {
+  +can_handle(handler_input)
+  +handle(handler_input)
+}
+
+class ConsultarPrestamosIntentHandler {
+  +can_handle(handler_input)
+  +handle(handler_input)
+}
+
+class ConsultarDevueltosIntentHandler {
+  +can_handle(handler_input)
+  +handle(handler_input)
+}
+
+class HelpIntentHandler {
+  +can_handle(handler_input)
+  +handle(handler_input)
+}
+
+class CancelOrStopIntentHandler {
+  +can_handle(handler_input)
+  +handle(handler_input)
+}
+
+class FallbackIntentHandler {
+  +can_handle(handler_input)
+  +handle(handler_input)
+}
+
+class DatabaseManager {
+  +get_user_data(handler_input)
+  +save_user_data(handler_input, data)
+}
+
+class S3Adapter {
+  +get_attributes(request_envelope)
+  +save_attributes(request_envelope, attrs)
+}
+
+class Utils {
+  +create_presigned_url(object_name)
+}
+
+AgregarLibroIntentHandler --> DatabaseManager
+EliminarLibroIntentHandler --> DatabaseManager
+ListarLibrosIntentHandler --> DatabaseManager
+BuscarLibroIntentHandler --> DatabaseManager
+PrestarLibroIntentHandler --> DatabaseManager
+DevolverLibroIntentHandler --> DatabaseManager
+ConsultarPrestamosIntentHandler --> DatabaseManager
+ConsultarDevueltosIntentHandler --> DatabaseManager
+
+DatabaseManager --> S3Adapter
+Utils --> S3Adapter
+@enduml
+
