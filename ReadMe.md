@@ -137,95 +137,104 @@ El sistema sigue una arquitectura por capas con separación clara de responsabil
 #### Diagrama de Contexto (Level 1)
 
 ```mermaid
-graph TB
-    User[Usuario] --> Alexa[Amazon Alexa]
-    Alexa --> Skill[Biblioteca Personal Skill]
-    Skill --> S3[Amazon S3]
-    Skill --> DDB[DynamoDB Cache]
-  
-    User -. "Comandos de voz" .-> Alexa
-    Alexa -. "Respuestas de voz" .-> User
+C4Context
+title System Context diagram for Biblioteca Personal Skill
+
+Person(user, "Usuario", "Usuario de la Biblioteca Personal Skill")
+System_Boundary(alexa_boundary, "Amazon Alexa") {
+  System(alexa, "Amazon Alexa", "Voice service platform")
+  System(skill, "Biblioteca Personal Skill", "Alexa Skill for managing books")
+}
+
+SystemDb(s3, "Amazon S3", "Object Storage")
+SystemDb(ddb, "DynamoDB Cache", "NoSQL Database")
+
+Rel(user, alexa, "Comandos de voz")
+Rel(alexa, user, "Respuestas de voz")
+Rel(user, alexa, "Uses")
+Rel(alexa, skill, "Invokes Skill")
+Rel(skill, s3, "Uses")
+Rel(skill, ddb, "Uses")
 ```
 
 #### Diagrama de Contenedores (Level 2)
 
 ```mermaid
-graph TB
-    subgraph "Amazon Alexa Platform"
-        ASK[Alexa Skills Kit]
-    end
-  
-    subgraph "AWS Lambda Container"
-        SkillApp[Biblioteca Skill Application]
-    end
-  
-    subgraph "Storage Layer"
-        S3DB[S3 Bucket - Persistent Storage]
-        MemCache[Memory Cache]
-        DDBCache[DynamoDB Cache - Optional]
-    end
-  
-    ASK --> SkillApp
-    SkillApp --> S3DB
-    SkillApp --> MemCache
-    SkillApp --> DDBCache
+C4Container
+title Container diagram for Alexa Biblioteca Skill
+
+System_Ext(alexa_platform, "Amazon Alexa Platform", "Voice Assistant Platform")
+Container(ask, "Alexa Skills Kit", "Cloud Service", "Receives and processes voice commands")
+
+Container_Boundary(lambda, "AWS Lambda Container") {
+    Container(skill_app, "Biblioteca Skill Application", "Node.js Lambda", "Skill logic executed on requests")
+}
+
+Container_Boundary(storage, "Storage Layer") {
+    ContainerDb(s3db, "S3 Bucket", "S3", "Persistent Storage")
+    Container(memcache, "Memory Cache", "In-memory Cache", "Temporary fast-access storage")
+    ContainerDb(ddb_cache, "DynamoDB Cache", "DynamoDB", "Optional cache layer")
+}
+
+Rel(alexa_platform, ask, "Uses")
+Rel(ask, skill_app, "Invokes on voice command intent")
+Rel(skill_app, s3db, "Reads/Writes data")
+Rel(skill_app, memcache, "Reads/Writes data")
+Rel(skill_app, ddb_cache, "Reads/Writes data (optional)")
 ```
 
 #### Diagrama de Componentes (Level 3)
 
 ```mermaid
-graph TB
-    subgraph "Presentation Layer"
-        LH[Launch Handler]
-        ALH[Add Book Handler]
-        LLH[List Books Handler]
-        PLH[Loan Handler]
-        RH[Return Handler]
-        FBH[Fallback Handler]
-    end
-  
-    subgraph "Business Layer"
-        BS[Book Service]
-        LS[Loan Service]
-        US[User Service]
-        VS[Validation Service]
-    end
-  
-    subgraph "Data Layer"
-        BR[Book Repository]
-        LR[Loan Repository]
-        UR[User Repository]
-    end
-  
-    subgraph "Infrastructure"
-        S3A[S3 Adapter]
-        CA[Cache Adapter]
-        UM[Utils Manager]
-    end
-  
-    subgraph "Models"
-        BM[Book Model]
-        LM[Loan Model]
-        UM[User Model]
-    end
-  
-    LH --> US
-    ALH --> BS
-    LLH --> BS
-    PLH --> LS
-    RH --> LS
-  
-    BS --> BR
-    LS --> LR
-    US --> UR
-  
-    BR --> S3A
-    LR --> S3A
-    UR --> S3A
-  
-    BR --> CA
-    LR --> CA
-    UR --> CA
+C4Container
+title Container diagram for Book Library System
+
+Container_Boundary(presentation, "Presentation Layer") {
+  Container(LH, "Launch Handler")
+  Container(ALH, "Add Book Handler")
+  Container(LLH, "List Books Handler")
+  Container(PLH, "Loan Handler")
+  Container(RH, "Return Handler")
+  Container(FBH, "Fallback Handler")
+}
+
+Container_Boundary(business, "Business Layer") {
+  Container(BS, "Book Service")
+  Container(LS, "Loan Service")
+  Container(US, "User Service")
+  Container(VS, "Validation Service")
+}
+
+Container_Boundary(data, "Data Layer") {
+  Container(BR, "Book Repository")
+  Container(LR, "Loan Repository")
+  Container(UR, "User Repository")
+}
+
+Container(s3a, "S3 Adapter", "Infrastructure", "Handles storage interactions")
+Container(ca, "Cache Adapter", "Infrastructure", "Caches data for fast access")
+Container(um, "Utils Manager", "Infrastructure", "Utility functions manager")
+
+Container_Boundary(models, "Models") {
+  Container(BM, "Book Model")
+  Container(LM, "Loan Model")
+  Container(U_M, "User Model")
+}
+
+Rel(LH, US, "Calls")
+Rel(ALH, BS, "Calls")
+Rel(LLH, BS, "Calls")
+Rel(PLH, LS, "Calls")
+Rel(RH, LS, "Calls")
+Rel(BS, BR, "Uses")
+Rel(LS, LR, "Uses")
+Rel(US, UR, "Uses")
+Rel(BR, s3a, "Uses")
+Rel(LR, s3a, "Uses")
+Rel(UR, s3a, "Uses")
+Rel(BR, ca, "Uses")
+Rel(LR, ca, "Uses")
+Rel(UR, ca, "Uses")
 ```
 
 **Enlaces a diagramas detallados:**

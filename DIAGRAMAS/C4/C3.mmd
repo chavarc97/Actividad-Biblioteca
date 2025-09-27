@@ -1,0 +1,49 @@
+C4Container
+title Container diagram for Book Library System
+
+Container_Boundary(presentation, "Presentation Layer") {
+  Container(LH, "Launch Handler")
+  Container(ALH, "Add Book Handler")
+  Container(LLH, "List Books Handler")
+  Container(PLH, "Loan Handler")
+  Container(RH, "Return Handler")
+  Container(FBH, "Fallback Handler")
+}
+
+Container_Boundary(business, "Business Layer") {
+  Container(BS, "Book Service")
+  Container(LS, "Loan Service")
+  Container(US, "User Service")
+  Container(VS, "Validation Service")
+}
+
+Container_Boundary(data, "Data Layer") {
+  Container(BR, "Book Repository")
+  Container(LR, "Loan Repository")
+  Container(UR, "User Repository")
+}
+
+Container(s3a, "S3 Adapter", "Infrastructure", "Handles storage interactions")
+Container(ca, "Cache Adapter", "Infrastructure", "Caches data for fast access")
+Container(um, "Utils Manager", "Infrastructure", "Utility functions manager")
+
+Container_Boundary(models, "Models") {
+  Container(BM, "Book Model")
+  Container(LM, "Loan Model")
+  Container(U_M, "User Model")
+}
+
+Rel(LH, US, "Calls")
+Rel(ALH, BS, "Calls")
+Rel(LLH, BS, "Calls")
+Rel(PLH, LS, "Calls")
+Rel(RH, LS, "Calls")
+Rel(BS, BR, "Uses")
+Rel(LS, LR, "Uses")
+Rel(US, UR, "Uses")
+Rel(BR, s3a, "Uses")
+Rel(LR, s3a, "Uses")
+Rel(UR, s3a, "Uses")
+Rel(BR, ca, "Uses")
+Rel(LR, ca, "Uses")
+Rel(UR, ca, "Uses")

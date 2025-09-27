@@ -1,0 +1,22 @@
+C4Container
+title Container diagram for Alexa Biblioteca Skill
+
+System_Ext(alexa_platform, "Amazon Alexa Platform", "Voice Assistant Platform")
+Container(ask, "Alexa Skills Kit", "Cloud Service", "Receives and processes voice commands")
+
+Container_Boundary(lambda, "AWS Lambda Container") {
+    Container(skill_app, "Biblioteca Skill Application", "Node.js Lambda", "Skill logic executed on requests")
+}
+
+Container_Boundary(storage, "Storage Layer") {
+    ContainerDb(s3db, "S3 Bucket", "S3", "Persistent Storage")
+    Container(memcache, "Memory Cache", "In-memory Cache", "Temporary fast-access storage")
+    ContainerDb(ddb_cache, "DynamoDB Cache", "DynamoDB", "Optional cache layer")
+}
+
+Rel(alexa_platform, ask, "Uses")
+Rel(ask, skill_app, "Invokes on voice command intent")
+Rel(skill_app, s3db, "Reads/Writes data")
+Rel(skill_app, memcache, "Reads/Writes data")
+Rel(skill_app, ddb_cache, "Reads/Writes data (optional)")
+

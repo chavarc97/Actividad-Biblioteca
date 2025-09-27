@@ -1,0 +1,19 @@
+
+C4Context
+title System Context diagram for Biblioteca Personal Skill
+
+Person(user, "Usuario", "Usuario de la Biblioteca Personal Skill")
+System_Boundary(alexa_boundary, "Amazon Alexa") {
+  System(alexa, "Amazon Alexa", "Voice service platform")
+  System(skill, "Biblioteca Personal Skill", "Alexa Skill for managing books")
+}
+
+SystemDb(s3, "Amazon S3", "Object Storage")
+SystemDb(ddb, "DynamoDB Cache", "NoSQL Database")
+
+Rel(user, alexa, "Comandos de voz")
+Rel(alexa, user, "Respuestas de voz")
+Rel(user, alexa, "Uses")
+Rel(alexa, skill, "Invokes Skill")
+Rel(skill, s3, "Uses")
+Rel(skill, ddb, "Uses")
