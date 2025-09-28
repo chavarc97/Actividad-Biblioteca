@@ -1,0 +1,24 @@
+@startuml Devolver
+' DevolverLibro – Match por id o título y movimiento a historial
+skinparam shadowing false
+
+[*] --> ElicitDato
+ElicitDato : si faltan ambos → "¿Qué libro te devolvieron? (título o ID)"
+ElicitDato --> Match
+
+Match : buscar en prestamos_activos por id == id_prestamo o contains(titulo)
+Match --> NoMatch : ninguno coincide → sugerir primeros 3
+Match --> Procesar : encontrado
+
+Procesar : pop() de prestamos_activos
+Procesar : set libro.estado = disponible
+Procesar : push a historial_prestamos + fecha_devolucion
+Procesar : ++estadisticas.total_devoluciones
+Procesar --> Respuesta
+
+Respuesta : "He registrado la devolución ... {a tiempo | tarde}." + resumen
+Respuesta --> [*]
+
+NoMatch : "Hmm, no encuentro ese préstamo. Tienes: 'A', 'B', 'C' ..."
+NoMatch --> [*]
+@enduml

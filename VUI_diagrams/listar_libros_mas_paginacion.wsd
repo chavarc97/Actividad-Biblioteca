@@ -1,0 +1,27 @@
+@startuml Listar
+    ' ListarLibros – Filtros y paginación (LIBROS_POR_PAGINA=10)
+    skinparam shadowing false
+
+    [*] --> Preparar
+    Preparar : sincronizar_estados()
+    Preparar : aplicar filtro por autor|prestados|disponibles
+    Preparar --> ListaVacia : sin resultados
+    Preparar --> Paginando : con resultados
+
+    ListaVacia : "No encontré libros {filtro}. ¿Algo más?"
+    ListaVacia --> [*]
+
+    state Paginando {
+    [*] --> Pagina
+    Pagina : "Libros del i al j: ... Di 'siguiente' o 'salir'"
+    Pagina --> Pagina : SiguientePaginaIntent (avanza pagina_libros)
+    Pagina --> Fin : fin de lista (j == total)
+    Pagina --> Cancelar : SalirListadoIntent
+    }
+
+    Fin : "Esos son todos. ¿Algo más?" (limpia paginación)
+    Fin --> [*]
+
+    Cancelar : "De acuerdo, terminé de mostrar" (limpia paginación)
+    Cancelar --> [*]
+@enduml

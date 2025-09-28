@@ -1,0 +1,132 @@
+@startuml Master
+    ' Master – Navegación principal de intents (es-MX)
+    skinparam shadowing false
+    skinparam state {
+    BackgroundColor #f8f8f8
+    BorderColor #888
+    RoundCorner 12
+    }
+
+    [*] --> Launch
+    state Launch {
+    [*] --> Bienvenida
+    Bienvenida : Saludo + estado + opciones + pregunta
+    Bienvenida --> Menu : usuario responde
+    }
+
+    state Menu {
+    [*] --> EsperaComando
+    EsperaComando --> AgregarLibro : AgregarLibroIntent
+    EsperaComando --> Listar : ListarLibrosIntent
+    EsperaComando --> Buscar : BuscarLibroIntent
+    EsperaComando --> Prestar : PrestarLibroIntent
+    EsperaComando --> Devolver : DevolverLibroIntent
+    EsperaComando --> VerPrestamos : ConsultarPrestamosIntent
+    EsperaComando --> VerDevueltos : ConsultarDevueltosIntent
+    EsperaComando --> LimpiarCache : LimpiarCacheIntent
+    EsperaComando --> MostrarOpciones : MostrarOpcionesIntent
+    EsperaComando --> [*] : AMAZON.StopIntent / AMAZON.CancelIntent
+    EsperaComando --> Ayuda : AMAZON.HelpIntent
+    EsperaComando --> Fallback : AMAZON.FallbackIntent
+    }
+
+    state AgregarLibro {
+    [*] --> PasoTitulo
+    PasoTitulo : Elicit título (si falta)
+    PasoTitulo --> PasoAutor : titulo capturado
+    PasoAutor : Elicit autor (permite "no sé" → Desconocido)
+    PasoAutor --> PasoTipo : autor capturado o Desconocido
+    PasoTipo : Elicit tipo (permite "no sé" → Sin categoría)
+    PasoTipo --> ConfirmAlta : título+autor+tipo
+    ConfirmAlta : Guarda libro + stats + limpia sesión
+    ConfirmAlta --> Menu : cierre + "¿algo más?"
+    }
+
+    state Listar {
+    [*] --> Preparar
+    Preparar : Sincroniza estados → aplica filtros (filtro_tipo|autor)
+    Preparar --> Paginando
+    state Paginando {
+        [*] --> PaginaN
+        PaginaN : Lee pagina_libros y responde (10 ítems)
+        PaginaN --> PaginaN : SiguientePaginaIntent / avanza índice
+        PaginaN --> Menu : SalirListadoIntent o fin de lista
+        PaginaN --> FallbackListando : AMAZON.FallbackIntent (contexto paginado)
+    }
+    }
+
+    state Buscar {
+    [*] --> ElicitTitulo
+    ElicitTitulo : Si falta titulo → pedir
+    ElicitTitulo --> MostrarResultado : 1 resultado → ficha
+    ElicitTitulo --> MostrarCoincidencias : n>1 → top 3
+    ElicitTitulo --> SinResultados : n=0 → sugerencias
+    MostrarResultado --> Menu
+    MostrarCoincidencias --> Menu
+    SinResultados --> Menu
+    }
+
+    state Prestar {
+    [*] --> ElicitTitulo
+    ElicitTitulo : Si falta titulo → pedir
+    ElicitTitulo --> ValidarLibro
+    ValidarLibro : Buscar exacto en biblioteca
+    ValidarLibro --> NoEncontrado : si no existe (sugerir disponibles)
+    ValidarLibro --> YaPrestado : si libro_id en préstamos
+    ValidarLibro --> RegistrarPrestamo : si disponible
+    RegistrarPrestamo : Crea préstamo + fecha_limite + stats
+    RegistrarPrestamo --> Menu
+    YaPrestado --> Menu
+    NoEncontrado --> Menu
+    }
+
+    state Devolver {
+    [*] --> ElicitDato
+    ElicitDato : Pide título o id_prestamo
+    ElicitDato --> EncontrarPrestamo
+    EncontrarPrestamo : Match por id o por título (contains)
+    EncontrarPrestamo --> NoMatch : si no encuentra (muestra sugerencias)
+    EncontrarPrestamo --> ProcesarDevolucion : si encuentra
+    ProcesarDevolucion : Mueve a historial, marca disponible, +stats, msg tiempo
+    ProcesarDevolucion --> Menu
+    NoMatch --> Menu
+    }
+
+    state VerPrestamos {
+    [*] --> Reporte
+    Reporte : Lista activos (máx 5), marca vencidos/por vencer
+    Reporte --> Menu
+    }
+
+    state VerDevueltos {
+    [*] --> Reporte
+    Reporte : Lista todos (≤10) o 5 recientes
+    Reporte --> Menu
+    }
+
+    state LimpiarCache {
+    [*] --> Ejecutar
+    Ejecutar : Limpia _CACHE → get_user_data → sincroniza → guarda
+    Ejecutar --> Menu
+    }
+
+    state MostrarOpciones {
+    [*] --> DecirMenu
+    DecirMenu : Copys de opciones + contexto + pregunta
+    DecirMenu --> Menu
+    }
+
+    state Ayuda {
+    [*] --> DecirAyuda
+    DecirAyuda : Guía de comandos
+    DecirAyuda --> Menu
+    }
+
+    state Fallback {
+    [*] --> Manejar
+    Manejar : Mensaje genérico + recordatorio de capacidades
+    Manejar --> Menu
+    }
+
+    Launch --> Menu
+@enduml

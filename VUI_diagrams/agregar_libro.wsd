@@ -1,0 +1,31 @@
+@startuml AgregarLibro
+    ' AgregarLibro – Captura progresiva (titulo→autor→tipo)
+    skinparam shadowing false
+
+    [*] --> Inicio
+    Inicio --> ElicitTitulo : AgregarLibroIntent sin titulo
+    Inicio --> ElicitAutor : con titulo, sin autor
+    Inicio --> ElicitTipo : con titulo+autor, sin tipo
+    Inicio --> ConfirmAlta : con todos
+
+    ElicitTitulo : "¿Cuál es el título?"
+    ElicitTitulo --> ElicitAutor : usuario dice titulo (ContinuarAgregar captura slots)
+    ElicitTitulo --> ElicitTitulo : Fallback/no entendido → tips "el título es ..."
+
+    ElicitAutor : "¿Quién es el autor? (di: no sé)"
+    ElicitAutor --> ElicitTipo : autor
+    ElicitAutor --> ElicitTipo : "no sé" → autor=Desconocido
+    ElicitAutor --> ElicitAutor : Fallback → tips "el autor es ..."
+
+    ElicitTipo : "¿De qué tipo/género es? (di: no sé)"
+    ElicitTipo --> ConfirmAlta : tipo
+    ElicitTipo --> ConfirmAlta : "no sé" → tipo=Sin categoría
+    ElicitTipo --> ElicitTipo : Fallback → tips "el tipo es ..."
+
+    ConfirmAlta : Crea libro {id, titulo, autor, tipo, fecha, estado=disponible}
+    ConfirmAlta : ++estadisticas.total_libros; limpia sesión
+    ConfirmAlta --> Exito
+
+    Exito : "Agregado '{titulo}'. Ahora tienes N libros. ¿Algo más?"
+    Exito --> [*]
+@enduml

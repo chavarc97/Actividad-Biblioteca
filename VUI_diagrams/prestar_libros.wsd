@@ -1,0 +1,26 @@
+@startuml Prestar
+' PrestarLibro – Validaciones y registro
+skinparam shadowing false
+
+[*] --> ElicitTitulo
+ElicitTitulo : si falta → "¿Qué libro quieres prestar?"
+ElicitTitulo --> BuscarLibro : con titulo
+
+BuscarLibro : buscar_libro_por_titulo_exacto()
+BuscarLibro --> NoEncontrado : no existe (sugerir disponibles)
+BuscarLibro --> YaPrestado : existe pero libro_id en préstamos
+BuscarLibro --> Registrar : existe y disponible
+
+YaPrestado : "'{titulo}' ya está prestado a {persona}." (+sugerencias)
+YaPrestado --> [*]
+
+Registrar : crea {id_prestamo, libro_id, persona, fecha_limite=+7d}
+Registrar : marca libro.estado=prestado; ++total_prestamos
+Registrar --> Exito
+
+Exito : "Registré el préstamo ... vence el {fecha_limite}. Te quedan K disponibles. ¿Algo más?"
+Exito --> [*]
+
+NoEncontrado : "No encuentro '{titulo}'. Ejemplos disponibles: ..."
+NoEncontrado --> [*]
+@enduml

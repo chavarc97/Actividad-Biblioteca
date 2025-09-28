@@ -1,0 +1,14 @@
+@startuml Consultas
+' ConsultarPrestamos & ConsultarDevueltos – Resúmenes
+skinparam shadowing false
+
+[*] --> Prestamos
+Prestamos : if vacío → "No tienes libros prestados"
+Prestamos : else → listar hasta 5 con (vence hoy / en N días / vencido)
+Prestamos --> [*]
+
+[*] --> Devueltos
+Devueltos : if historial==0 → "Aún no registras devoluciones"
+Devueltos : else → listar todos (≤10) o 5 recientes
+Devueltos --> [*]
+@enduml
