@@ -8,7 +8,6 @@
 
 **Historial de revisiones:**
 
-
 | Versión | Fecha      | Autor(es) | Cambios Realizados              | Aprobado por      |
 | -------- | ---------- | --------- | ------------------------------- | ----------------- |
 | 0.1      | 2025-09-22 | Equipo    | Creación inicial del documento | Líder del equipo |
@@ -91,7 +90,6 @@ El código actual está implementado como un monolito en un único archivo `lamb
 
 ## 3. Requerimientos funcionales
 
-
 | ID    | Descripción                     | Actor   | Prioridad | Criterios de aceptación                                              |
 | ----- | -------------------------------- | ------- | --------- | --------------------------------------------------------------------- |
 | RF-01 | Agregar libros mediante diálogo | Usuario | Alta      | El sistema debe solicitar título, autor y tipo en pasos secuenciales |
@@ -108,7 +106,6 @@ El código actual está implementado como un monolito en un único archivo `lamb
 ---
 
 ## 4. Requerimientos no funcionales
-
 
 | ID     | Atributo       | Descripción                 | Métricas / criterios cuantitativos     |
 | ------ | -------------- | ---------------------------- | --------------------------------------- |
@@ -550,7 +547,7 @@ El archivo `lambda_function.py` original presentaba los siguientes problemas est
 
 #### Paso 1: Identificación de responsabilidades
 
-```
+``` markdown
 Monolito original → Responsabilidades identificadas:
 - Manejo de requests/responses Alexa → Handlers (Presentation)
 - Lógica de negocio → Services (Business)
@@ -613,7 +610,6 @@ lambda_function.py (orchestrator)
 4. **Central response builder:** Evita duplicación de lógica de construcción de respuestas Alexa
 
 ### Historial de Revisión / Mantenimiento
-
 
 | Versión | Fecha    | Autor(es)               | Cambios Realizados                                      | Aprobado por           | Comentarios adicionales               |
 | -------- | -------- | ----------------------- | ------------------------------------------------------- | ---------------------- | ------------------------------------- |
