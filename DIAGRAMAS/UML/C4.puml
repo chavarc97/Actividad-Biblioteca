@@ -1,10 +1,19 @@
 @startuml 
-title C4 - Level 4
+title C4 - Level 4 - Library Management System
 
+' ==================== ENUMS ====================
 enum BookStatus {
     DISPONIBLE: "Disponible"
     PRESTADO: "Prestado"
 }
+
+enum LoanStatus {
+    ACTIVO : "activo"
+    DEVUELTO : "devuelto"
+    VENCIDO : "vencido"
+}
+
+' ==================== DOMAIN MODELS ====================
 class Book_Model {
     - id: str
     - titulo: str
@@ -23,12 +32,6 @@ class Book_Model {
     + to_dict() : dict
     + from_dict(data: dict) : Book_Model
     + __str__() : str
-}
-
-enum LoanStatus {
-    ACTIVO = "activo"
-    DEVUELTO = "devuelto"
-    VENCIDO = "vencido"
 }
 
 class Loan_Model {
@@ -53,8 +56,8 @@ class Loan_Model {
     + from_dict(data: dict) : Loan_Model
     + __str__() : str
 }
-'=====================================================================================
-' ==== Interfaces ====
+
+' ==================== INTERFACES ====================
 interface IDataAdapter {
   + get_attributes(request_envelope) : Dict[str, Any]
   + save_attributes(request_envelope, attributes: Dict[str, Any]) : None
@@ -74,8 +77,8 @@ interface IBookRepository {
 interface ILoanRepository {
   + find_active_loans(user_id: str) : List[Loan]
   + find_loan_history(user_id: str) : [Loan]
-  + find_by_book_id(user_id: str, book_id: str) : Optional[Loan]
-  + find_by_title(user_id: str, title: str) : Optional[Loan]
+  + find_by_book_id(user_id: str, book_id: str) : Optional<Loan>
+  + find_by_title(user_id: str, title: str) : Optional<Loan>
   + save_loan(user_id: str, loan: Loan) : None
   + complete_loan(user_id: str, loan_id: str) : bool
 }
@@ -87,54 +90,45 @@ interface ICacheService {
   + clear_all() : None
 }
 
-' ==== Relaciones  ====
-IBookRepository --> Book_Model
-ILoanRepository --> Loan_Model
-
-
-'===================================== Servicios  ========================================
-' ==== Clase BookService ====
-class BookService {
-  + __init__(book_repository: IBookRepository, loan_repository: ILoanRepository)
-  + add_book(user_id: str, titulo: str, autor: str = None, tipo: str = None) : (bool, str, Book)
-  + get_all_books(user_id: str) : [Book]
-  + search_books_by_title(user_id: str, search_term: str) : [Book]
-  + search_books_by_author(user_id: str, search_term: str) : [Book]
-  + get_available_books(user_id: str) : [Book]
-  + get_loaned_books(user_id: str) : [Book]
-  + delete_book(user_id: str, book_id: str = None, title: str = None) : (bool, str, Book)
-  + get_book_statistics(user_id: str) : dict
-  - _sync_book_states(user_id: str, books: [Book]) : [Book]
+' ==================== DATA LAYER ====================
+class S3DataAdapter {
+  - _bucket_name: str
+  - _s3_adapter: S3Adapter
+  + __init__(bucket_name: str)
+  + get_attributes(request_envelope) : Dict
+  + save_attributes(request_envelope, attributes: Dict) : None
+  + delete_attributes(request_envelope) : None
+  - _get_initial_user_data() : Dict
+  - _validate_and_normalize_data(data: Dict) : Dict
+  - _validate_books_data(data: Dict) : None
+  - _validate_loans_data(data: Dict) : None
+  - _validate_statistics_data(data: Dict) : None
+  - _generate_id() : str
+  - _generate_loan_id() : str
 }
-' ==== Relaciones BookService ====
-BookService --> IBookRepository : usa
-BookService --> ILoanRepository : usa
-BookService --> Book_Model : manipula
-BookService --> BookStatus : usa
 
-' ==== Clase LoanService ====
-class LoanService {
-  + __init__(book_repository: IBookRepository, loan_repository: ILoanRepository)
-  + create_loan(user_id: str, book_title: str = None, book_id: str = None, person_name: str = None, loan_days: int = None) : (bool, str, Loan)
-  + return_loan(user_id: str, book_title: str = None, loan_id: str = None) : (bool, str, Loan)
-  + get_active_loans(user_id: str) : List<Loan>
-  + get_loan_history(user_id: str) : List<Loan>
-  + get_overdue_loans(user_id: str) : List<Loan>
-  + get_loans_due_soon(user_id: str, days_threshold: int = 2) : List<Loan>
-  + get_loan_statistics(user_id: str) : dict
-  + extend_loan(user_id: str, loan_id: str, additional_days: int = 7) : (bool, str, Loan)
+class FakeS3DataAdapter {
+  - _store: dict
+  + __init__()
+  + get_attributes(request_envelope) : Dict
+  + save_attributes(request_envelope, attributes: Dict) : None
+  + delete_attributes(request_envelope) : None
+  - _extract_user_id(request_envelope) : str
 }
-' ==== Relaciones LoanService ====
-LoanService --> IBookRepository : usa
-LoanService --> ILoanRepository : usa
-LoanService --> Book_Model : manipula
-LoanService --> BookStatus : usa
-LoanService --> Loan_Model : manipula
-LoanService --> LoanStatus : usa
 
-'======================================================================================
-'================== Repositorios ======================================================
-' ==== Repositorio BookRepository ====
+class MemoryCacheService {
+  - _cache: Dict<str, Dict<str, Any>>
+  + __init__()
+  + get(key: str) : Optional<Dict>
+  + set(key: str, data: Dict, ttl_seconds: int=3600) : None
+  + delete(key: str) : None
+  + clear_all() : None
+  + get_stats() : Dict
+  + cleanup_expired() : int
+  - _estimate_memory_usage() : str
+}
+
+' ==================== REPOSITORIES ====================
 class BookRepository {
   - _data_adapter: IDataAdapter
   - _cache_service: Optional<ICacheService>
@@ -151,13 +145,7 @@ class BookRepository {
   - _get_user_data(user_id: str) : dict
   - _save_user_data(user_id: str, user_data: dict) : None
 }
-' ==== Relaciones BookRepository ====
-BookRepository ..|> IBookRepository
-BookRepository --> IDataAdapter : usa
-BookRepository --> ICacheService : usa (opcional)
-BookRepository --> Book_Model : manipula
 
-' ==== Repositorio LoanRepository ====
 class LoanRepository {
   - _data_adapter: IDataAdapter
   - _cache_service: Optional<ICacheService>
@@ -176,59 +164,34 @@ class LoanRepository {
   - _update_loan_statistics(user_data: dict) : None
   - _invalidate_cache(user_id: str) : None
 }
-' ==== Relaciones ====
-LoanRepository ..|> ILoanRepository
-LoanRepository --> IDataAdapter : usa
-LoanRepository --> ICacheService : usa (opcional)
-LoanRepository --> Loan_Model : manipula
-Loan_Model --> LoanStatus
-'======================================================================================
-' ======================== S3DataAdapter y FakeS3DataAdapter ==========================
-class S3DataAdapter {
-  - _bucket_name: str
-  - _s3_adapter: S3Adapter
-  + __init__(bucket_name: str)
-  + get_attributes(request_envelope) : Dict
-  + save_attributes(request_envelope, attributes: Dict) : None
-  + delete_attributes(request_envelope) : None
-  - _get_initial_user_data() : Dict
-  - _validate_and_normalize_data(data: Dict) : Dict
-  - _validate_books_data(data: Dict) : None
-  - _validate_loans_data(data: Dict) : None
-  - _validate_statistics_data(data: Dict) : None
-  - _generate_id() : str
-  - _generate_loan_id() : str
+
+' ==================== SERVICES ====================
+class BookService {
+  + __init__(book_repository: IBookRepository, loan_repository: ILoanRepository)
+  + add_book(user_id: str, titulo: str, autor: str = None, tipo: str = None) : (bool, str, Book)
+  + get_all_books(user_id: str) : [Book]
+  + search_books_by_title(user_id: str, search_term: str) : [Book]
+  + search_books_by_author(user_id: str, search_term: str) : [Book]
+  + get_available_books(user_id: str) : [Book]
+  + get_loaned_books(user_id: str) : [Book]
+  + delete_book(user_id: str, book_id: str = None, title: str = None) : (bool, str, Book)
+  + get_book_statistics(user_id: str) : dict
+  - _sync_book_states(user_id: str, books: [Book]) : [Book]
 }
 
-' ==== Adaptador fake ====
-class FakeS3DataAdapter {
-  - _store: dict
-  + __init__()
-  + get_attributes(request_envelope) : Dict
-  + save_attributes(request_envelope, attributes: Dict) : None
-  + delete_attributes(request_envelope) : None
-  - _extract_user_id(request_envelope) : str
-}
-' ==== Relaciones ====
-S3DataAdapter ..|> IDataAdapter
-FakeS3DataAdapter ..|> IDataAdapter
-FakeS3DataAdapter --> S3DataAdapter : reutiliza _get_initial_user_data()
-
-' CACHE SERVICE
-class MemoryCacheService {
-  - _cache: Dict<str, Dict<str, Any>>
-  + __init__()
-  + get(key: str) : Optional<Dict>
-  + set(key: str, data: Dict, ttl_seconds: int=3600) : None
-  + delete(key: str) : None
-  + clear_all() : None
-  + get_stats() : Dict
-  + cleanup_expired() : int
-  - _estimate_memory_usage() : str
+class LoanService {
+  + __init__(book_repository: IBookRepository, loan_repository: ILoanRepository)
+  + create_loan(user_id: str, book_title: str = None, book_id: str = None, person_name: str = None, loan_days: int = None) : (bool, str, Loan)
+  + return_loan(user_id: str, book_title: str = None, loan_id: str = None) : (bool, str, Loan)
+  + get_active_loans(user_id: str) : List<Loan>
+  + get_loan_history(user_id: str) : List<Loan>
+  + get_overdue_loans(user_id: str) : List<Loan>
+  + get_loans_due_soon(user_id: str, days_threshold: int = 2) : List<Loan>
+  + get_loan_statistics(user_id: str) : dict
+  + extend_loan(user_id: str, loan_id: str, additional_days: int = 7) : (bool, str, Loan)
 }
 
-'======================================================================================
-' ================================ DATABASE MANAGER  ===================================
+' ==================== INFRASTRUCTURE ====================
 class DatabaseManager {
   - handler_input
   - data_adapter: IDataAdapter
@@ -244,19 +207,6 @@ class DatabaseManager {
   + {static} _user_id(handler_input) : str
 }
 
-class ServiceFactory {
-  + get_data_adapter() : IDataAdapter
-  + get_cache_service() : ICacheService
-  + get_database_manager(handler_input) : DatabaseManager
-}
-
-DatabaseManager --> IDataAdapter
-DatabaseManager ..> ICacheService : "usa en métodos estáticos"
-
-
-
-'======================================================================================
-' ================================ SERVICE FACTORY  ===================================
 class ServiceFactory {
   - _data_adapter: IDataAdapter
   - _cache_service: ICacheService
@@ -280,34 +230,9 @@ class ServiceFactory {
   + get_factory_stats() : Dict
 }
 
-' ==== Relaciones ====
-ServiceFactory --> IDataAdapter
-ServiceFactory --> ICacheService
-ServiceFactory --> BookRepository
-ServiceFactory --> LoanRepository
-ServiceFactory --> BookService
-ServiceFactory --> LoanService
-ServiceFactory --> DatabaseManager
-
-S3DataAdapter ..|> IDataAdapter
-FakeS3DataAdapter ..|> IDataAdapter
-MemoryCacheService ..|> ICacheService
-
-BookRepository --> IDataAdapter
-BookRepository --> ICacheService
-
-LoanRepository --> ICacheService
-
-BookService --> BookRepository
-BookService --> LoanRepository
-LoanService --> BookRepository
-LoanService --> LoanRepository
+' ==================== HANDLERS ====================
 
 
-
-'======================================================================================
-' ================================ HANDLERS  ==========================================
-' ==== Handlers ====
 class AddBookIntentHandler {
   - _service_factory: ServiceFactory
   + can_handle(handler_input) : bool
@@ -344,8 +269,63 @@ class BuscarLibroIntentHandler
 class SiguientePaginaIntentHandler
 class SalirListadoIntentHandler
 
+' ==================== UTILITY CLASSES ====================
+class ValidationUtils
+class ResponsePhrases
 
-' Handlers usan servicios
+' ==================== RELATIONSHIPS ====================
+
+' Interface implementations
+S3DataAdapter ..|> IDataAdapter
+FakeS3DataAdapter ..|> IDataAdapter
+MemoryCacheService ..|> ICacheService
+BookRepository ..|> IBookRepository
+LoanRepository ..|> ILoanRepository
+
+' Repository dependencies
+BookRepository --> IDataAdapter
+BookRepository --> ICacheService
+BookRepository --> Book_Model
+
+LoanRepository --> IDataAdapter
+LoanRepository --> ICacheService
+LoanRepository --> Loan_Model
+
+' Service dependencies
+BookService --> IBookRepository
+BookService --> ILoanRepository
+BookService --> Book_Model
+BookService --> BookStatus
+
+LoanService --> IBookRepository
+LoanService --> ILoanRepository
+LoanService --> Book_Model
+LoanService --> Loan_Model
+LoanService --> BookStatus
+LoanService --> LoanStatus
+
+' Factory dependencies
+ServiceFactory --> IDataAdapter
+ServiceFactory --> ICacheService
+ServiceFactory --> BookRepository
+ServiceFactory --> LoanRepository
+ServiceFactory --> BookService
+ServiceFactory --> LoanService
+ServiceFactory --> DatabaseManager
+
+DatabaseManager --> IDataAdapter
+DatabaseManager ..> ICacheService : "usa en métodos estáticos"
+
+' Handler dependencies
+AddBookIntentHandler --> ServiceFactory
+ContinueAddingBookHandler --> ServiceFactory
+
+AddBookIntentHandler --> ValidationUtils : valida
+ContinueAddingBookHandler --> ValidationUtils : valida
+AddBookIntentHandler --> ResponsePhrases : frases
+ContinueAddingBookHandler --> ResponsePhrases : frases
+
+' Handler-service relationships
 ListBooksIntentHandler --> BookService
 ListBooksIntentHandler --> MemoryCacheService
 DeleteBookIntentHandler --> BookService
@@ -366,16 +346,10 @@ SiguientePaginaIntentHandler --> BookService
 SiguientePaginaIntentHandler --> MemoryCacheService
 SalirListadoIntentHandler --> MemoryCacheService
 
+' Model relationships
+Loan_Model --> LoanStatus
 
-AddBookIntentHandler --> ServiceFactory : usa
-ContinueAddingBookHandler --> ServiceFactory : usa
-AddBookIntentHandler --> BookService : usa
-ContinueAddingBookHandler --> BookService : usa
-
-AddBookIntentHandler --> ValidationUtils : valida
-ContinueAddingBookHandler --> ValidationUtils : valida
-AddBookIntentHandler --> ResponsePhrases : frases
-ContinueAddingBookHandler --> ResponsePhrases : frases
-
+' Data adapter relationship
+FakeS3DataAdapter --> S3DataAdapter : reutiliza _get_initial_user_data()
 
 @enduml
