@@ -25,7 +25,7 @@ class Book_Model {
     + __str__() : str
 }
 
-enum loanStatus {
+enum LoanStatus {
     ACTIVO = "activo"
     DEVUELTO = "devuelto"
     VENCIDO = "vencido"
@@ -53,7 +53,7 @@ class Loan_Model {
     + from_dict(data: dict) : Loan_Model
     + __str__() : str
 }
-
+'=====================================================================================
 ' ==== Interfaces ====
 interface IDataAdapter {
   + get_attributes(request_envelope) : Dict[str, Any]
@@ -72,10 +72,10 @@ interface IBookRepository {
 }
 
 interface ILoanRepository {
-  + find_active_loans(user_id: str) : List<Loan>
-  + find_loan_history(user_id: str) : List<Loan>
-  + find_by_book_id(user_id: str, book_id: str) : Optional<Loan>
-  + find_by_title(user_id: str, title: str) : Optional<Loan>
+  + find_active_loans(user_id: str) : List[Loan]
+  + find_loan_history(user_id: str) : [Loan]
+  + find_by_book_id(user_id: str, book_id: str) : Optional[Loan]
+  + find_by_title(user_id: str, title: str) : Optional[Loan]
   + save_loan(user_id: str, loan: Loan) : None
   + complete_loan(user_id: str, loan_id: str) : bool
 }
@@ -87,8 +87,295 @@ interface ICacheService {
   + clear_all() : None
 }
 
-' ==== Relaciones ====
+' ==== Relaciones  ====
 IBookRepository --> Book_Model
 ILoanRepository --> Loan_Model
+
+
+'===================================== Servicios  ========================================
+' ==== Clase BookService ====
+class BookService {
+  + __init__(book_repository: IBookRepository, loan_repository: ILoanRepository)
+  + add_book(user_id: str, titulo: str, autor: str = None, tipo: str = None) : (bool, str, Book)
+  + get_all_books(user_id: str) : [Book]
+  + search_books_by_title(user_id: str, search_term: str) : [Book]
+  + search_books_by_author(user_id: str, search_term: str) : [Book]
+  + get_available_books(user_id: str) : [Book]
+  + get_loaned_books(user_id: str) : [Book]
+  + delete_book(user_id: str, book_id: str = None, title: str = None) : (bool, str, Book)
+  + get_book_statistics(user_id: str) : dict
+  - _sync_book_states(user_id: str, books: [Book]) : [Book]
+}
+' ==== Relaciones BookService ====
+BookService --> IBookRepository : usa
+BookService --> ILoanRepository : usa
+BookService --> Book_Model : manipula
+BookService --> BookStatus : usa
+
+' ==== Clase LoanService ====
+class LoanService {
+  + __init__(book_repository: IBookRepository, loan_repository: ILoanRepository)
+  + create_loan(user_id: str, book_title: str = None, book_id: str = None, person_name: str = None, loan_days: int = None) : (bool, str, Loan)
+  + return_loan(user_id: str, book_title: str = None, loan_id: str = None) : (bool, str, Loan)
+  + get_active_loans(user_id: str) : List<Loan>
+  + get_loan_history(user_id: str) : List<Loan>
+  + get_overdue_loans(user_id: str) : List<Loan>
+  + get_loans_due_soon(user_id: str, days_threshold: int = 2) : List<Loan>
+  + get_loan_statistics(user_id: str) : dict
+  + extend_loan(user_id: str, loan_id: str, additional_days: int = 7) : (bool, str, Loan)
+}
+' ==== Relaciones LoanService ====
+LoanService --> IBookRepository : usa
+LoanService --> ILoanRepository : usa
+LoanService --> Book_Model : manipula
+LoanService --> BookStatus : usa
+LoanService --> Loan_Model : manipula
+LoanService --> LoanStatus : usa
+
+'======================================================================================
+'================== Repositorios ======================================================
+' ==== Repositorio BookRepository ====
+class BookRepository {
+  - _data_adapter: IDataAdapter
+  - _cache_service: Optional<ICacheService>
+  - _cache_ttl: int = 3600
+
+  + __init__(data_adapter: IDataAdapter, cache_service: Optional<ICacheService>)
+  + find_all(user_id: str) : List<Book>
+  + find_by_id(user_id: str, book_id: str) : Optional<Book>
+  + find_by_title(user_id: str, title: str) : List<Book>
+  + find_by_author(user_id: str, author: str) : List<Book>
+  + save(user_id: str, book: Book) : None
+  + delete(user_id: str, book_id: str) : bool
+  + exists_title(user_id: str, title: str) : bool
+  - _get_user_data(user_id: str) : dict
+  - _save_user_data(user_id: str, user_data: dict) : None
+}
+' ==== Relaciones BookRepository ====
+BookRepository ..|> IBookRepository
+BookRepository --> IDataAdapter : usa
+BookRepository --> ICacheService : usa (opcional)
+BookRepository --> Book_Model : manipula
+
+' ==== Repositorio LoanRepository ====
+class LoanRepository {
+  - _data_adapter: IDataAdapter
+  - _cache_service: Optional<ICacheService>
+  - _cache_ttl: int = 3600
+
+  + __init__(data_adapter: IDataAdapter, cache_service: Optional[ICacheService>)
+  + find_active_loans(user_id: str) : List<Loan>
+  + find_loan_history(user_id: str) : List<Loan>
+  + find_by_book_id(user_id: str, book_id: str) : Optional<Loan>
+  + find_by_title(user_id: str, title: str) : Optional<Loan>
+  + save_loan(user_id: str, loan: Loan) : None
+  + complete_loan(user_id: str, loan_id: str) : bool
+  - _get_user_data(user_id: str) : dict
+  - _save_user_data(user_id: str, user_data: dict) : None
+  - _move_to_history(user_data: dict, loan: Loan) : None
+  - _update_loan_statistics(user_data: dict) : None
+  - _invalidate_cache(user_id: str) : None
+}
+' ==== Relaciones ====
+LoanRepository ..|> ILoanRepository
+LoanRepository --> IDataAdapter : usa
+LoanRepository --> ICacheService : usa (opcional)
+LoanRepository --> Loan_Model : manipula
+Loan_Model --> LoanStatus
+'======================================================================================
+' ======================== S3DataAdapter y FakeS3DataAdapter ==========================
+class S3DataAdapter {
+  - _bucket_name: str
+  - _s3_adapter: S3Adapter
+  + __init__(bucket_name: str)
+  + get_attributes(request_envelope) : Dict
+  + save_attributes(request_envelope, attributes: Dict) : None
+  + delete_attributes(request_envelope) : None
+  - _get_initial_user_data() : Dict
+  - _validate_and_normalize_data(data: Dict) : Dict
+  - _validate_books_data(data: Dict) : None
+  - _validate_loans_data(data: Dict) : None
+  - _validate_statistics_data(data: Dict) : None
+  - _generate_id() : str
+  - _generate_loan_id() : str
+}
+
+' ==== Adaptador fake ====
+class FakeS3DataAdapter {
+  - _store: dict
+  + __init__()
+  + get_attributes(request_envelope) : Dict
+  + save_attributes(request_envelope, attributes: Dict) : None
+  + delete_attributes(request_envelope) : None
+  - _extract_user_id(request_envelope) : str
+}
+' ==== Relaciones ====
+S3DataAdapter ..|> IDataAdapter
+FakeS3DataAdapter ..|> IDataAdapter
+FakeS3DataAdapter --> S3DataAdapter : reutiliza _get_initial_user_data()
+
+' CACHE SERVICE
+class MemoryCacheService {
+  - _cache: Dict<str, Dict<str, Any>>
+  + __init__()
+  + get(key: str) : Optional<Dict>
+  + set(key: str, data: Dict, ttl_seconds: int=3600) : None
+  + delete(key: str) : None
+  + clear_all() : None
+  + get_stats() : Dict
+  + cleanup_expired() : int
+  - _estimate_memory_usage() : str
+}
+
+'======================================================================================
+' ================================ DATABASE MANAGER  ===================================
+class DatabaseManager {
+  - handler_input
+  - data_adapter: IDataAdapter
+  - user_id: str
+  
+  + __init__(handler_input, data_adapter: IDataAdapter)
+  + get_user_data_instance() : Dict
+  + save_user_data_instance(data: Dict) : None
+  
+  + {static} get_user_data(handler_input) : Dict
+  + {static} save_user_data(handler_input, data: Dict) : None
+  + {static} initial_data() : Dict
+  + {static} _user_id(handler_input) : str
+}
+
+class ServiceFactory {
+  + get_data_adapter() : IDataAdapter
+  + get_cache_service() : ICacheService
+  + get_database_manager(handler_input) : DatabaseManager
+}
+
+DatabaseManager --> IDataAdapter
+DatabaseManager ..> ICacheService : "usa en métodos estáticos"
+
+
+
+'======================================================================================
+' ================================ SERVICE FACTORY  ===================================
+class ServiceFactory {
+  - _data_adapter: IDataAdapter
+  - _cache_service: ICacheService
+  - _book_repository: BookRepository
+  - _loan_repository: LoanRepository
+  - _use_fake_s3: bool
+  - _enable_cache: bool
+  - _s3_bucket: str
+
+  + get_data_adapter() : IDataAdapter
+  + get_cache_service() : ICacheService
+  + get_book_repository(handler_input=None) : BookRepository
+  + get_loan_repository(handler_input=None) : LoanRepository
+  + get_book_service(handler_input=None) : BookService
+  + get_loan_service(handler_input=None) : LoanService
+  + get_database_manager(handler_input) : DatabaseManager
+  + reset_cache() : void
+  + reset_all() : void
+  + configure_for_testing(use_fake_s3: bool, enable_cache: bool) : void
+  + configure_for_production(s3_bucket: str, enable_cache: bool) : void
+  + get_factory_stats() : Dict
+}
+
+' ==== Relaciones ====
+ServiceFactory --> IDataAdapter
+ServiceFactory --> ICacheService
+ServiceFactory --> BookRepository
+ServiceFactory --> LoanRepository
+ServiceFactory --> BookService
+ServiceFactory --> LoanService
+ServiceFactory --> DatabaseManager
+
+S3DataAdapter ..|> IDataAdapter
+FakeS3DataAdapter ..|> IDataAdapter
+MemoryCacheService ..|> ICacheService
+
+BookRepository --> IDataAdapter
+BookRepository --> ICacheService
+
+LoanRepository --> ICacheService
+
+BookService --> BookRepository
+BookService --> LoanRepository
+LoanService --> BookRepository
+LoanService --> LoanRepository
+
+
+
+'======================================================================================
+' ================================ HANDLERS  ==========================================
+' ==== Handlers ====
+class AddBookIntentHandler {
+  - _service_factory: ServiceFactory
+  + can_handle(handler_input) : bool
+  + handle(handler_input) : Response
+  - _request_title(handler_input) : Response
+  - _request_author(handler_input, titulo: str) : Response
+  - _request_type(handler_input, titulo: str, autor: str) : Response
+  - _create_book(handler_input, book_service: BookService, user_id: str, titulo: str, autor: str, tipo: str) : Response
+  - _handle_validation_error(handler_input, error_message: str) : Response
+  - _handle_error(handler_input) : Response
+  - _extract_user_id(handler_input) : str
+}
+
+class ContinueAddingBookHandler {
+  - _service_factory: ServiceFactory
+  + can_handle(handler_input) : bool
+  + handle(handler_input) : Response
+  - _extract_user_response(handler_input) : str
+  - _process_title_response(handler_input, valor: str) : Response
+  - _process_author_response(handler_input, valor: str) : Response
+  - _process_type_response(handler_input, valor: str) : Response
+  - _restart_process(handler_input) : Response
+  - _handle_validation_error(handler_input, error_message: str) : Response
+  - _handle_error(handler_input) : Response
+}
+
+class ListBooksIntentHandler
+class DeleteBookIntentHandler
+class LoanBookIntentHandler
+class ReturnBookIntentHandler
+class ConsultarPrestamosIntentHandler
+class ConsultarDevueltosIntentHandler
+class BuscarLibroIntentHandler
+class SiguientePaginaIntentHandler
+class SalirListadoIntentHandler
+
+
+' Handlers usan servicios
+ListBooksIntentHandler --> BookService
+ListBooksIntentHandler --> MemoryCacheService
+DeleteBookIntentHandler --> BookService
+DeleteBookIntentHandler --> LoanService
+LoanBookIntentHandler --> BookService
+LoanBookIntentHandler --> LoanService
+LoanBookIntentHandler --> DatabaseManager
+ReturnBookIntentHandler --> BookService
+ReturnBookIntentHandler --> LoanService
+ReturnBookIntentHandler --> DatabaseManager
+ConsultarPrestamosIntentHandler --> LoanService
+ConsultarPrestamosIntentHandler --> DatabaseManager
+ConsultarDevueltosIntentHandler --> LoanService
+ConsultarDevueltosIntentHandler --> DatabaseManager
+BuscarLibroIntentHandler --> BookService
+BuscarLibroIntentHandler --> MemoryCacheService
+SiguientePaginaIntentHandler --> BookService
+SiguientePaginaIntentHandler --> MemoryCacheService
+SalirListadoIntentHandler --> MemoryCacheService
+
+
+AddBookIntentHandler --> ServiceFactory : usa
+ContinueAddingBookHandler --> ServiceFactory : usa
+AddBookIntentHandler --> BookService : usa
+ContinueAddingBookHandler --> BookService : usa
+
+AddBookIntentHandler --> ValidationUtils : valida
+ContinueAddingBookHandler --> ValidationUtils : valida
+AddBookIntentHandler --> ResponsePhrases : frases
+ContinueAddingBookHandler --> ResponsePhrases : frases
+
 
 @enduml
