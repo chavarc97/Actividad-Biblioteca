@@ -8,6 +8,7 @@
 
 **Historial de revisiones:**
 
+
 | Versión | Fecha      | Autor(es) | Cambios Realizados              | Aprobado por      |
 | -------- | ---------- | --------- | ------------------------------- | ----------------- |
 | 0.1      | 2025-09-22 | Equipo    | Creación inicial del documento | Líder del equipo |
@@ -90,6 +91,7 @@ El código actual está implementado como un monolito en un único archivo `lamb
 
 ## 3. Requerimientos funcionales
 
+
 | ID    | Descripción                     | Actor   | Prioridad | Criterios de aceptación                                              |
 | ----- | -------------------------------- | ------- | --------- | --------------------------------------------------------------------- |
 | RF-01 | Agregar libros mediante diálogo | Usuario | Alta      | El sistema debe solicitar título, autor y tipo en pasos secuenciales |
@@ -106,6 +108,7 @@ El código actual está implementado como un monolito en un único archivo `lamb
 ---
 
 ## 4. Requerimientos no funcionales
+
 
 | ID     | Atributo       | Descripción                 | Métricas / criterios cuantitativos     |
 | ------ | -------------- | ---------------------------- | --------------------------------------- |
@@ -141,17 +144,19 @@ Person(user, "Usuario", "Usuario de la Biblioteca Personal Skill")
 System_Boundary(alexa_boundary, "Amazon Alexa") {
   System(alexa, "Amazon Alexa", "Voice service platform")
   System(skill, "Biblioteca Personal Skill", "Alexa Skill for managing books")
+  System(AWS Lambda, "Backend", "Logica de la skill")
 }
 
 SystemDb(s3, "Amazon S3", "Object Storage")
-SystemDb(ddb, "DynamoDB Cache", "NoSQL Database")
+
 
 Rel(user, alexa, "Comandos de voz")
 Rel(alexa, user, "Respuestas de voz")
 Rel(user, alexa, "Uses")
 Rel(alexa, skill, "Invokes Skill")
-Rel(skill, s3, "Uses")
-Rel(skill, ddb, "Uses")
+Rel(skill, AWS Lambda, "Invoca Lambda")
+Rel(AWS Lambda, s3, "Uses")
+
 ```
 
 #### Diagrama de Contenedores (Level 2)
@@ -163,21 +168,22 @@ title Container diagram for Alexa Biblioteca Skill
 System_Ext(alexa_platform, "Amazon Alexa Platform", "Voice Assistant Platform")
 Container(ask, "Alexa Skills Kit", "Cloud Service", "Receives and processes voice commands")
 
+
 Container_Boundary(lambda, "AWS Lambda Container") {
-    Container(skill_app, "Biblioteca Skill Application", "Node.js Lambda", "Skill logic executed on requests")
+    Container(skill_app, "Biblioteca Skill Application", "AWS Lambda", "Skill logic executed on requests")
 }
 
 Container_Boundary(storage, "Storage Layer") {
     ContainerDb(s3db, "S3 Bucket", "S3", "Persistent Storage")
     Container(memcache, "Memory Cache", "In-memory Cache", "Temporary fast-access storage")
-    ContainerDb(ddb_cache, "DynamoDB Cache", "DynamoDB", "Optional cache layer")
+
 }
 
 Rel(alexa_platform, ask, "Uses")
 Rel(ask, skill_app, "Invokes on voice command intent")
 Rel(skill_app, s3db, "Reads/Writes data")
 Rel(skill_app, memcache, "Reads/Writes data")
-Rel(skill_app, ddb_cache, "Reads/Writes data (optional)")
+
 ```
 
 #### Diagrama de Componentes (Level 3)
@@ -519,7 +525,6 @@ class Loan:
 
 ## 8. Apéndices
 
-
 ### Decisiones de diseño importantes
 
 1. **Patrón Repository:** Abstrae el acceso a datos permitiendo cambiar de S3 a otra base de datos
@@ -575,7 +580,7 @@ Monolito original → Responsabilidades identificadas:
 
 #### Paso 3: Reestructuración de archivos
 
-``` markdown
+```markdown
 Estructura final:
 lambda_function.py (orchestrator)
 ├── handlers/
