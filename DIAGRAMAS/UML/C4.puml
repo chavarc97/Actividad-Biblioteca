@@ -348,6 +348,7 @@ SalirListadoIntentHandler --> MemoryCacheService
 
 ' Model relationships
 Loan_Model --> LoanStatus
+Book_Model --> BookStatus
 
 ' Data adapter relationship
 FakeS3DataAdapter --> S3DataAdapter : reutiliza _get_initial_user_data()
