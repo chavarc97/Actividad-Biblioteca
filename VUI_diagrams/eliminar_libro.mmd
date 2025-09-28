@@ -1,0 +1,16 @@
+graph TD
+    A["Usuario: Elimina un libro"] --> B["Sistema: ¿Qué libro quieres eliminar?"]
+    B --> C["Usuario: Dice título"]
+    C --> D{"¿Libro encontrado?"}
+    D -->|Sí| E["Sistema: ¿Estás seguro de eliminar X?"]
+    D -->|No| F["Sistema: No encontré ese libro"]
+    F --> G["Sistema: Sugiere libros disponibles"]
+    G --> C
+    E --> H["Usuario: Sí o No"]
+    H -->|Sí| I{"¿Libro prestado?"}
+    H -->|No| J["Sistema: Ok, no lo elimino"]
+    I -->|No| K["Sistema: Elimina y confirma"]
+    I -->|Sí| L["Sistema: Está prestado, ¿eliminar igual?"]
+    L --> M["Usuario: Confirma"]
+    M -->|Sí| N["Sistema: Elimina y cancela préstamo"]
+    M -->|No| J
