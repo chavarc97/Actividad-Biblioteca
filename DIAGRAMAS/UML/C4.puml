@@ -1,10 +1,10 @@
-@startuml 
+@startuml  
 title C4 - Level 4 - Library Management System
 
 ' ==================== ENUMS ====================
 enum BookStatus {
-    DISPONIBLE: "Disponible"
-    PRESTADO: "Prestado"
+    DISPONIBLE : "Disponible"
+    PRESTADO : "Prestado"
 }
 
 enum LoanStatus {
