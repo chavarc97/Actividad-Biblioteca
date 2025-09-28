@@ -16,8 +16,8 @@
 ## 1. Introducción (Caso de uso)
 
 ### Descripción general del sistema
+El proyecto consiste en una skill de Alexa llamada Manolito, que sirve para manejar una biblioteca personal de libros. El usuario puede hablar con Alexa para agregar, eliminar, listar, buscar, prestar y devolver libros, todo mediante comandos de voz. La información se guarda en la nube (Amazon S3). 
 
-El Sistema de Gestión de Biblioteca Personal es un Alexa Skill que permite a los usuarios gestionar de manera intuitiva su colección personal de libros mediante comandos de voz. El sistema facilita el control de inventario, préstamos y devoluciones de libros físicos.
 
 ### Objetivo del documento
 
