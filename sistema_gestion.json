@@ -1,7 +1,7 @@
 {
     "interactionModel": {
         "languageModel": {
-            "invocationName": "biblioteca pines",
+            "invocationName": "biblioteca Personal",
             "intents": [
                 {
                     "name": "AMAZON.CancelIntent",

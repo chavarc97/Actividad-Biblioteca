@@ -264,6 +264,130 @@ class DateUtils:
         day = date.day
         month = months[date.month - 1]
         year = date.year
-
-        return f"{day} de {month} de {year}"
+        
+        return f"{day} de {month}"
     
+    @staticmethod
+    def days_until(future_date: datetime) -> int:
+        """
+        Calcula días hasta una fecha futura
+        
+        Args:
+            future_date: Fecha futura
+        
+        Returns:
+            Número de días (negativo si es pasado)
+        """
+        delta = future_date - datetime.now()
+        return delta.days
+    
+    @staticmethod
+    def is_overdue(due_date: datetime) -> bool:
+        """
+        Verifica si una fecha está vencida
+        
+        Args:
+            due_date: Fecha límite
+        
+        Returns:
+            True si está vencida
+        """
+        return datetime.now() > due_date
+
+
+class TextUtils:
+    """
+    Utilidades para manipulación de texto
+    
+    Principio Single Responsibility: Solo operaciones de texto
+    """
+    
+    @staticmethod
+    def pluralize(count: int, singular: str, plural: str) -> str:
+        """
+        Pluraliza palabras basado en cantidad
+        
+        Args:
+            count: Cantidad
+            singular: Forma singular
+            plural: Forma plural
+        
+        Returns:
+            Forma correcta basada en cantidad
+        """
+        return singular if count == 1 else plural
+    
+    @staticmethod
+    def truncate_text(text: str, max_length: int = 100, suffix: str = "...") -> str:
+        """
+        Trunca texto si es muy largo
+        
+        Args:
+            text: Texto a truncar
+            max_length: Longitud máxima
+            suffix: Sufijo a agregar si se trunca
+        
+        Returns:
+            Texto truncado
+        """
+        if not text or len(text) <= max_length:
+            return text
+        
+        return text[:max_length - len(suffix)] + suffix
+    
+    @staticmethod
+    def clean_text(text: str) -> str:
+        """
+        Limpia y normaliza texto
+        
+        Args:
+            text: Texto a limpiar
+        
+        Returns:
+            Texto limpio
+        """
+        if not text:
+            return ""
+        
+        # Remover espacios extras y normalizar
+        cleaned = " ".join(text.strip().split())
+        return cleaned
+    
+    @staticmethod
+    def format_list_natural(items: List[str], conjunction: str = "y") -> str:
+        """
+        Formatea una lista en lenguaje natural
+        
+        Args:
+            items: Lista de elementos
+            conjunction: Conjunción a usar
+        
+        Returns:
+            Lista formateada naturalmente
+        """
+        if not items:
+            return ""
+        
+        if len(items) == 1:
+            return items[0]
+        
+        if len(items) == 2:
+            return f"{items[0]} {conjunction} {items[1]}"
+        
+        return f"{', '.join(items[:-1])} {conjunction} {items[-1]}"
+
+
+# Funciones de conveniencia para mantener compatibilidad
+def generate_unique_id() -> str:
+    """Función de conveniencia para generar IDs únicos"""
+    return IdGenerator.generate_unique_id()
+
+
+def generate_loan_id() -> str:
+    """Función de conveniencia para generar IDs de préstamo"""
+    return IdGenerator.generate_loan_id()
+
+
+def get_random_phrase(phrase_list: List[str]) -> str:
+    """Función de conveniencia para obtener frases aleatorias"""
+    return ResponsePhrases.get_random_phrase(phrase_list)
